@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+{% include "_style.css" %}
+
+/* Study and reading pages */
+:root{--good:#2F7A4F;--good-soft:#E6F2EA}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--good:#7CC79A;--good-soft:#1C2A22}}
+:root[data-theme="dark"]{--good:#7CC79A;--good-soft:#1C2A22}
+[hidden]{display:none !important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.idea{font-size:20px;line-height:1.5;font-weight:600;margin:4px 0 16px;text-wrap:pretty}
+.goals{margin-top:24px;background:var(--accent-soft);border-radius:4px;padding:22px 28px}
+.goals h2{font-family:var(--sans);font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 4px;font-weight:600}
+.goals p{margin:0 0 12px;font-size:15.5px;color:var(--ink-2)}
+.goals ol{margin:0;padding-left:1.2em;display:grid;gap:8px}
+details.more{margin:18px 0 0;border-top:1px solid var(--rule);padding-top:12px}
+details.more summary{cursor:pointer;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent)}
+details.more[open] summary{margin-bottom:12px}
+.more-open{margin-top:6px}
+.selfcheck{margin:26px 0 0;padding:18px 20px;background:var(--surface);border:1px solid var(--rule);border-radius:4px;display:grid;gap:14px}
+.selfcheck .label{display:block;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);margin:0 0 6px}
+.rate,.grade{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--sans);font-size:14px;line-height:1.2;padding:7px 13px;border:1px solid var(--rule);border-radius:999px;background:var(--ground);color:var(--ink);cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.check{display:grid;gap:10px;border-top:1px solid var(--rule);padding-top:14px}
+.check .q{margin:0;font-size:17px;line-height:1.5}
+.check textarea{font:inherit;font-size:16px;width:100%;min-height:68px;padding:8px 10px;border:1px solid var(--rule);border-radius:3px;background:var(--ground);color:var(--ink);resize:vertical}
+.check textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.check .reveal{justify-self:start}
+.answer{display:grid;gap:10px;padding:12px 14px;background:var(--accent-soft);border-radius:3px;font-size:16px}
+.answer p{margin:0}
+.grade-q{font-family:var(--sans);font-size:13px;color:var(--ink-2)}
+.dot{display:inline-block;flex:none;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--rule);margin-right:6px;vertical-align:1px}
+.dot.solid,.dot.under{background:var(--good);border-color:var(--good)}
+.dot.shaky,.dot.pending{background:var(--accent-soft);border-color:var(--accent)}
+.dot.illusion{background:var(--warn);border-color:var(--warn)}
+.calib-line{font-size:18px;margin:14px 0 0}
+.calib-group{margin:20px 0 0}
+.calib-group h3{font-family:var(--sans);font-size:15px;font-weight:600;margin:0 0 6px;display:flex;align-items:center}
+.calib-group ul{margin:0;padding-left:1.4em;display:grid;gap:4px;font-size:16px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:26px 28px;min-height:170px;display:grid;align-content:center;gap:10px;max-width:640px;margin-top:14px}
+.card .side{font-family:var(--sans);font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2)}
+.card .text{font-size:21px;line-height:1.45}
+.card-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 0;max-width:640px}
+.card-count{font-family:var(--mono);font-size:13px;color:var(--ink-2);margin-left:auto}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+@media print{
+  .selfcheck,.calib,.cards,.goals p,.tools{display:none !important}
+}
+</style>
+</head>
+<body class="{{ 'mode-study' if study else 'mode-read' }}{% if not has_audio %} no-audio{% endif %}" data-key="{{ storage_key }}">
+<div class="layout">
+
+<nav class="toc" aria-label="{{ ui.contents }}">
+<details id="toc-details" open>
+<summary>{{ ui.contents }}</summary>
+<ol>
+{% for part in parts %}
+{% if part.title %}
+  <li class="toc-part">{{ part.label }} · {{ part.title }}</li>
+{% endif %}
+{% for s in part.sections %}
+  <li><a href="#{{ s.id }}" data-id="{{ s.id }}"><span>{{ s.start_label }}</span><span class="toc-title">{% if study %}<i class="dot open" data-dot="{{ s.id }}" aria-hidden="true"></i>{% endif %}{{ s.toc_title }}</span></a></li>
+{% endfor %}
+{% endfor %}
+  <li class="toc-part" aria-hidden="true"></li>
+{% if study %}
+  <li><a href="#calib"><span>—</span>{{ ui.calib_title }}</a></li>
+  <li><a href="#cards"><span>—</span>{{ ui.cards_title }}</a></li>
+{% endif %}
+{% if glossary %}
+  <li><a href="#glossary"><span>—</span>{{ ui.glossary }}</a></li>
+{% endif %}
+</ol>
+</details>
+</nav>
+
+<main class="content">
+<header class="cover">
+  {% if meta.series %}<p class="eyebrow">{{ meta.series }}</p>{% endif %}
+  <h1>{{ title }}</h1>
+  {% if meta.original_title %}<p class="original-title">{{ meta.original_title }}</p>{% endif %}
+  <dl class="facts">
+    {% if meta.speaker %}<div><dt>{{ ui.speaker }}</dt><dd>{{ meta.speaker }}{% if meta.affiliation %}<br>{{ meta.affiliation }}{% endif %}</dd></div>{% endif %}
+    <div><dt>{{ ui.duration }}</dt><dd>{{ duration_label }}</dd></div>
+    <div><dt>{{ ui.reading }}</dt><dd>{{ reading_study if study else reading_read }}</dd></div>
+  </dl>
+  <div class="actions">
+    <button type="button" class="btn" id="print-btn">{{ ui.print }}</button>
+    {% if has_audio %}<a class="btn" href="audio.m4a" download>{{ ui.download_audio }}</a>{% endif %}
+    {% if has_transcript %}<a class="btn" href="transcript.txt" download>{{ ui.transcript }}</a>{% endif %}
+  </div>
+  <p class="how">{{ ui.how_study if study else ui.how_read }}</p>
+</header>
+
+{% if study and goals %}
+<section class="goals" aria-labelledby="goals-title">
+  <h2 id="goals-title">{{ ui.goals_title }}</h2>
+  <p>{{ ui.goals_hint }}</p>
+  <ol>{% for goal in goals %}<li>{{ goal }}</li>{% endfor %}</ol>
+</section>
+{% endif %}
+
+{% if summary.thesis or summary.points %}
+<section class="thesis" aria-labelledby="thesis-title">
+  <h2 id="thesis-title">{{ ui.main_idea }}</h2>
+  {% if summary.thesis %}<p class="big">{{ summary.thesis }}</p>{% endif %}
+  {% if summary.points %}<ul>{% for point in summary.points %}<li>{{ point }}</li>{% endfor %}</ul>{% endif %}
+</section>
+{% endif %}
+
+{% for part in parts %}
+{% if part.title %}
+<div class="part"><span class="part-no">{{ part.label }}</span><h2>{{ part.title }}</h2></div>
+{% endif %}
+{% for s in part.sections %}
+<section class="topic" id="{{ s.id }}" data-start="{{ s.start }}">
+  <header class="topic-head">
+    <div class="stamp">
+      <button type="button" class="ts" data-t="{{ s.start }}" title="{{ ui.play_section }}"><span class="ts-icon" aria-hidden="true">▶</span>{{ s.time_label }}</button>
+      <span class="slide-no">{{ ui.slide }} {{ s.slide_label }}</span>
+    </div>
+    <h3>{{ s.title }}</h3>
+    {% if s.original_title %}<p class="original">{{ s.original_title }}</p>{% endif %}
+  </header>
+  {% for image in s.images %}
+  <figure class="slide{% if s.narrow %} narrow{% endif %}">
+    <button type="button" class="zoom" aria-label="{{ ui.zoom }}"><img src="{{ image.src }}" alt="{{ image.alt }}"></button>
+  </figure>
+  {% endfor %}
+  <div class="prose">
+    <p class="idea">{{ s.idea }}</p>
+    {{ s.explain }}
+    {% for c in s.key_callouts %}
+    <div class="callout callout-{{ c.type }}"><span class="label">{{ c.title }}</span>{{ c.body }}</div>
+    {% endfor %}
+    {% if s.has_more %}
+    {% if study %}<details class="more"><summary>{{ ui.more }}</summary>{% else %}<div class="more-open">{% endif %}
+      {{ s.details }}
+      {% for c in s.more_callouts %}
+      <div class="callout callout-{{ c.type }}"><span class="label">{{ c.title }}</span>{{ c.body }}</div>
+      {% endfor %}
+    {% if study %}</details>{% else %}</div>{% endif %}
+    {% endif %}
+  </div>
+  {% if study %}
+  <div class="selfcheck" data-sid="{{ s.id }}">
+    <div>
+      <span class="label" id="rate-{{ s.id }}">{{ ui.rate_q }}</span>
+      <div class="rate" role="group" aria-labelledby="rate-{{ s.id }}">
+        <button type="button" class="chip" data-rate="ok" aria-pressed="false">{{ ui.rate_ok }}</button>
+        <button type="button" class="chip" data-rate="unsure" aria-pressed="false">{{ ui.rate_unsure }}</button>
+        <button type="button" class="chip" data-rate="no" aria-pressed="false">{{ ui.rate_no }}</button>
+      </div>
+    </div>
+    {% for q in s.checks %}
+    <div class="check" data-cid="{{ s.id }}-{{ loop.index0 }}">
+      <p class="q"><span class="label">{{ ui.check }}</span>{{ q.q }}</p>
+      <label class="sr" for="ans-{{ s.id }}-{{ loop.index0 }}">{{ ui.your_answer }}</label>
+      <textarea id="ans-{{ s.id }}-{{ loop.index0 }}" rows="2" placeholder="{{ ui.answer_placeholder }}"></textarea>
+      <button type="button" class="btn reveal">{{ ui.reveal }}</button>
+      <div class="answer" hidden>
+        <div>{{ q.a }}</div>
+        <span class="grade-q">{{ ui.grade_q }}</span>
+        <div class="grade" role="group">
+          <button type="button" class="chip" data-grade="right" aria-pressed="false">{{ ui.right }}</button>
+          <button type="button" class="chip" data-grade="wrong" aria-pressed="false">{{ ui.wrong }}</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+{% endfor %}
+
+{% if study %}
+<section class="calib" id="calib" aria-labelledby="calib-title">
+  <div class="part"><h2 id="calib-title">{{ ui.calib_title }}</h2></div>
+  <p class="how">{{ ui.calib_how }}</p>
+  <div id="calib-body" aria-live="polite"></div>
+  <div class="tools"><button type="button" class="btn" id="reset-btn">{{ ui.reset }}</button></div>
+</section>
+
+<section class="cards" id="cards" aria-labelledby="cards-title">
+  <div class="part"><h2 id="cards-title">{{ ui.cards_title }}</h2></div>
+  <p class="how">{{ ui.cards_hint }}</p>
+  <div class="card" aria-live="polite">
+    <span class="side" id="card-side"></span>
+    <div class="text" id="card-text"></div>
+  </div>
+  <div class="card-actions">
+    <button type="button" class="btn" id="card-flip">{{ ui.flip }}</button>
+    <button type="button" class="chip" id="card-again">{{ ui.again }}</button>
+    <button type="button" class="chip" id="card-known">{{ ui.known }}</button>
+    <span class="card-count" id="card-count"></span>
+  </div>
+  <div class="tools"><a class="btn" href="cards.csv" download>{{ ui.cards_csv }}</a></div>
+</section>
+<script type="application/json" id="cards-data">{{ cards|tojson }}</script>
+<script type="application/json" id="study-ui">{{ script_ui|tojson }}</script>
+{% endif %}
+
+{% if glossary %}
+<div class="part" id="glossary"><h2>{{ ui.glossary }}</h2></div>
+<dl class="glossary">
+{% for g in glossary %}
+  <div><dt>{{ g.term }}{% if g.original %} <span class="term">{{ g.original }}</span>{% endif %}</dt><dd>{{ g.definition }}</dd></div>
+{% endfor %}
+</dl>
+{% endif %}
+</main>
+</div>
+
+{% if has_audio %}
+<div class="player" id="player">
+  <span class="now" id="now-playing"></span>
+  <audio id="audio" controls preload="metadata" src="audio.m4a"></audio>
+</div>
+{% endif %}
+
+<dialog class="zoom-dialog" id="zoom-dialog" aria-label="{{ ui.zoom }}">
+  <img id="zoom-img" alt="">
+  <p>{{ ui.close_hint }}</p>
+</dialog>
+
+<script>
+(function(){
+  var dialog=document.getElementById('zoom-dialog'), zoomImg=document.getElementById('zoom-img');
+  document.querySelectorAll('figure.slide .zoom').forEach(function(button){
+    button.addEventListener('click',function(){
+      var img=button.querySelector('img'); zoomImg.src=img.src; zoomImg.alt=img.alt;
+      if(dialog.showModal) dialog.showModal();
+    });
+  });
+  dialog.addEventListener('click',function(){ dialog.close(); });
+  document.getElementById('print-btn').addEventListener('click',function(){ window.print(); });
+
+  var audio=document.getElementById('audio');
+  function noAudio(){
+    document.body.classList.add('no-audio');
+    var player=document.getElementById('player'); if(player) player.hidden=true;
+  }
+  if(!audio){ noAudio(); }
+  else {
+    audio.addEventListener('error',noAudio);
+    document.querySelectorAll('.ts').forEach(function(button){
+      button.addEventListener('click',function(){
+        if(document.body.classList.contains('no-audio')) return;
+        audio.currentTime=parseFloat(button.dataset.t)||0; audio.play();
+      });
+    });
+    var sections=[].slice.call(document.querySelectorAll('section.topic[data-start]'));
+    var links={}; document.querySelectorAll('nav.toc a[data-id]').forEach(function(a){ links[a.dataset.id]=a; });
+    var current=null, nowPlaying=document.getElementById('now-playing');
+    audio.addEventListener('timeupdate',function(){
+      var t=audio.currentTime, found=null;
+      for(var i=0;i<sections.length;i++){ if(parseFloat(sections[i].dataset.start)<=t) found=sections[i]; else break; }
+      if(found===current) return;
+      if(current){ current.classList.remove('playing'); if(links[current.id]) links[current.id].classList.remove('playing'); }
+      current=found;
+      if(current){
+        current.classList.add('playing');
+        if(links[current.id]) links[current.id].classList.add('playing');
+        nowPlaying.textContent=current.querySelector('h3').textContent;
+      }
+    });
+  }
+
+  var toc=document.getElementById('toc-details'), narrow=window.matchMedia('(max-width: 960px)');
+  function fitToc(){ if(narrow.matches) toc.removeAttribute('open'); else toc.setAttribute('open',''); }
+  fitToc();
+  if(narrow.addEventListener) narrow.addEventListener('change',fitToc);
+  document.querySelectorAll('nav.toc a').forEach(function(a){
+    a.addEventListener('click',function(){ if(narrow.matches) toc.removeAttribute('open'); });
+  });
+
+  if(!document.body.classList.contains('mode-study')) return;
+
+  /* ---- Study state: kept in this browser only ---- */
+  var T=JSON.parse(document.getElementById('study-ui').textContent);
+  var key='study:'+document.body.dataset.key;
+  var state={};
+  try{ state=JSON.parse(localStorage.getItem(key))||{}; }catch(e){ state={}; }
+  ['rate','grade','text','cards'].forEach(function(k){ state[k]=state[k]||{}; });
+  function save(){ try{ localStorage.setItem(key,JSON.stringify(state)); }catch(e){} }
+  function fill(text,values){ return text.replace(/\{(\w+)\}/g,function(m,k){ return k in values?values[k]:m; }); }
+
+  var boxes=[].slice.call(document.querySelectorAll('.selfcheck'));
+  boxes.forEach(function(box){
+    var sid=box.dataset.sid;
+    box.querySelectorAll('[data-rate]').forEach(function(button){
+      button.addEventListener('click',function(){ state.rate[sid]=button.dataset.rate; save(); paint(); });
+    });
+    box.querySelectorAll('.check').forEach(function(check){
+      var cid=check.dataset.cid, area=check.querySelector('textarea'),
+          answer=check.querySelector('.answer'), reveal=check.querySelector('.reveal');
+      if(state.text[cid]) area.value=state.text[cid];
+      area.addEventListener('input',function(){ state.text[cid]=area.value; save(); });
+      function open(){ answer.hidden=false; reveal.hidden=true; }
+      if(state.grade[cid]) open();
+      reveal.addEventListener('click',function(){ open(); state.grade[cid]=state.grade[cid]||'seen'; save(); });
+      check.querySelectorAll('[data-grade]').forEach(function(button){
+        button.addEventListener('click',function(){ state.grade[cid]=button.dataset.grade; save(); paint(); });
+      });
+    });
+  });
+
+  function paint(){
+    var groups={illusion:[],shaky:[],under:[],solid:[],pending:[],open:[]}, rated=0, confident=0, right=0;
+    boxes.forEach(function(box){
+      var sid=box.dataset.sid, rating=state.rate[sid];
+      box.querySelectorAll('[data-rate]').forEach(function(b){ b.setAttribute('aria-pressed',String(b.dataset.rate===rating)); });
+      var grades=[].map.call(box.querySelectorAll('.check'),function(check){
+        var g=state.grade[check.dataset.cid];
+        check.querySelectorAll('[data-grade]').forEach(function(b){ b.setAttribute('aria-pressed',String(b.dataset.grade===g)); });
+        return g;
+      });
+      var graded=grades.filter(function(g){ return g==='right'||g==='wrong'; });
+      var missed=graded.indexOf('wrong')>=0, complete=grades.length>0&&graded.length===grades.length;
+      var status;
+      if(!rating) status='open';
+      else if(rating==='ok') status=missed?'illusion':(complete?'solid':'pending');
+      else status=(complete&&!missed)?'under':'shaky';
+      if(rating) rated++;
+      if(rating==='ok'&&(complete||missed)){ confident++; if(!missed) right++; }
+      groups[status].push({sid:sid,title:document.querySelector('#'+sid+' h3').textContent});
+      var dot=document.querySelector('[data-dot="'+sid+'"]'); if(dot) dot.className='dot '+status;
+    });
+
+    var body=document.getElementById('calib-body'); body.textContent='';
+    var line=document.createElement('p'); line.className='calib-line';
+    line.textContent=fill(T.calib_line,{rated:rated,total:boxes.length,confident:confident,right:right});
+    body.appendChild(line);
+    ['illusion','shaky','under','solid','pending','open'].forEach(function(name){
+      if(!groups[name].length) return;
+      var group=document.createElement('div'); group.className='calib-group';
+      var heading=document.createElement('h3'), dot=document.createElement('i');
+      dot.className='dot '+name; heading.appendChild(dot);
+      heading.appendChild(document.createTextNode(T['cat_'+name]+' ('+groups[name].length+')'));
+      group.appendChild(heading);
+      if(name!=='open'){
+        var list=document.createElement('ul');
+        groups[name].forEach(function(item){
+          var li=document.createElement('li'), a=document.createElement('a');
+          a.href='#'+item.sid; a.textContent=item.title; li.appendChild(a); list.appendChild(li);
+        });
+        group.appendChild(list);
+      }
+      body.appendChild(group);
+    });
+  }
+
+  document.getElementById('reset-btn').addEventListener('click',function(){
+    if(!window.confirm(T.reset_confirm)) return;
+    state={rate:{},grade:{},text:{},cards:{}}; save(); window.location.reload();
+  });
+
+  /* ---- Flashcards: unknown cards come back at the end of the queue ---- */
+  var cards=JSON.parse(document.getElementById('cards-data').textContent);
+  var queue=cards.map(function(c,i){ return i; }).filter(function(i){ return state.cards[i]!=='known'; });
+  var flipped=false;
+  var side=document.getElementById('card-side'), text=document.getElementById('card-text'),
+      count=document.getElementById('card-count'), flip=document.getElementById('card-flip'),
+      again=document.getElementById('card-again'), known=document.getElementById('card-known');
+  function showCard(){
+    var done=cards.length-queue.length;
+    count.textContent=fill(T.cards_count,{known:done,total:cards.length});
+    var empty=!queue.length;
+    flip.hidden=again.hidden=known.hidden=empty;
+    if(empty){ side.textContent=''; text.textContent=T.cards_done; return; }
+    var card=cards[queue[0]];
+    side.textContent=flipped?T.back:T.front;
+    text.textContent=flipped?card.back:card.front;
+  }
+  flip.addEventListener('click',function(){ flipped=!flipped; showCard(); });
+  again.addEventListener('click',function(){ queue.push(queue.shift()); flipped=false; showCard(); });
+  known.addEventListener('click',function(){ state.cards[queue.shift()]='known'; save(); flipped=false; showCard(); });
+
+  paint();
+  showCard();
+})();
+</script>
+</body>
+</html>

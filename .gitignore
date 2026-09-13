@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Secrets and personal notes
+.env
+CLAUDE.local.md
+.claude/settings.local.json
+private/
+
+# Videos and everything derived from them stay local (usually third-party content).
+inputs/
+outputs/
+examples/
+
+# Downloaded on first use (MediaPipe selfie segmenter, Apache 2.0)
+lecturenotes/models/

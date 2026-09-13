@@ -1,0 +1,12 @@
+numpy
+# mediapipe depends on the contrib build; installing opencv-python-headless next to it breaks cv2.
+opencv-contrib-python
+av
+faster-whisper
+jinja2
+markdown
+mediapipe
+google-genai
+# GPU transcription (CUDA 12). Without an NVIDIA GPU Whisper falls back to the CPU.
+nvidia-cublas-cu12; platform_system != "Darwin"
+nvidia-cudnn-cu12==9.*; platform_system != "Darwin"

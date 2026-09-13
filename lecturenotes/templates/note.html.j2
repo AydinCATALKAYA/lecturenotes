@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+{% include "_style.css" %}
+</style>
+</head>
+<body{% if not has_audio %} class="no-audio"{% endif %}>
+<div class="layout">
+
+<nav class="toc" aria-label="{{ ui.contents }}">
+<details id="toc-details" open>
+<summary>{{ ui.contents }}</summary>
+<ol>
+{% for part in parts %}
+{% if part.title %}
+  <li class="toc-part">{{ part.label }} · {{ part.title }}</li>
+{% endif %}
+{% for s in part.sections %}
+  <li><a href="#{{ s.id }}" data-id="{{ s.id }}"><span>{{ s.start_label }}</span>{{ s.toc_title }}</a></li>
+{% endfor %}
+{% endfor %}
+{% if glossary %}
+  <li class="toc-part" aria-hidden="true"></li>
+  <li><a href="#glossary"><span>—</span>{{ ui.glossary }}</a></li>
+{% endif %}
+</ol>
+</details>
+</nav>
+
+<main class="content">
+<header class="cover">
+  {% if meta.series %}<p class="eyebrow">{{ meta.series }}</p>{% endif %}
+  <h1>{{ title }}</h1>
+  {% if meta.original_title %}<p class="original-title">{{ meta.original_title }}</p>{% endif %}
+  <dl class="facts">
+    {% if meta.speaker %}<div><dt>{{ ui.speaker }}</dt><dd>{{ meta.speaker }}{% if meta.affiliation %}<br>{{ meta.affiliation }}{% endif %}</dd></div>{% endif %}
+    <div><dt>{{ ui.duration }}</dt><dd>{{ duration_label }}{% if image_count %} · {{ image_count }} {{ ui.slides }}{% endif %}</dd></div>
+    <div><dt>{{ ui.note_language }}</dt><dd>{{ meta.language_label or ui.language_name }}</dd></div>
+  </dl>
+  <div class="actions">
+    {% if downloads.pdf %}<a class="btn" href="note.pdf" download>{{ ui.download_pdf }}</a>{% endif %}
+    <button type="button" class="btn" id="print-btn">{{ ui.print }}</button>
+    {% if downloads.audio %}<a class="btn" href="audio.m4a" download>{{ ui.download_audio }}</a>{% endif %}
+    {% if downloads.transcript %}<a class="btn" href="transcript.txt" download>{{ ui.transcript }}</a>{% endif %}
+    {% if downloads.slides %}<a class="btn" href="slides.zip" download>{{ ui.slides_zip }}</a>{% endif %}
+  </div>
+  <p class="how">{{ ui.how_to_read|safe }}</p>
+</header>
+
+{% if summary.thesis or summary.points %}
+<section class="thesis" aria-labelledby="thesis-title">
+  <h2 id="thesis-title">{{ ui.main_idea }}</h2>
+  {% if summary.thesis %}<p class="big">{{ summary.thesis }}</p>{% endif %}
+  {% if summary.points %}<ul>{% for point in summary.points %}<li>{{ point }}</li>{% endfor %}</ul>{% endif %}
+</section>
+{% endif %}
+
+{% for part in parts %}
+{% if part.title %}
+<div class="part"><span class="part-no">{{ part.label }}</span><h2>{{ part.title }}</h2></div>
+{% endif %}
+{% for s in part.sections %}
+<section class="topic" id="{{ s.id }}"{% if s.start is not none %} data-start="{{ s.start }}"{% endif %}>
+  <header class="topic-head">
+    <div class="stamp">
+      {% if s.time_label %}<button type="button" class="ts" data-t="{{ s.start }}" title="{{ ui.play_section }}"><span class="ts-icon" aria-hidden="true">▶</span>{{ s.time_label }}</button>{% endif %}
+      {% if s.slide_label %}<span class="slide-no">{{ ui.slide }} {{ s.slide_label }}</span>{% endif %}
+    </div>
+    <h3>{{ s.title }}</h3>
+    {% if s.original_title %}<p class="original">{{ s.original_title }}</p>{% endif %}
+  </header>
+  {% for image in s.images %}
+  <figure class="slide{% if s.narrow %} narrow{% endif %}">
+    <button type="button" class="zoom" aria-label="{{ ui.zoom }}"><img src="{{ image.src }}" alt="{{ image.alt }}"></button>
+    {% if loop.last and s.caption %}<figcaption>{{ s.caption }}</figcaption>{% endif %}
+  </figure>
+  {% endfor %}
+  <div class="prose">
+    {% if s.visual %}<h4>{{ ui.what_on_slide }}</h4>
+    {{ s.visual }}{% endif %}
+    {% if s.content %}<h4>{{ ui.what_was_said }}</h4>
+    {{ s.content }}{% endif %}
+    {% for c in s.callouts %}
+    <div class="callout callout-{{ c.type }}"><span class="label">{{ c.title }}</span>{{ c.body }}</div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endfor %}
+
+{% if glossary %}
+<div class="part" id="glossary"><h2>{{ ui.glossary }}</h2></div>
+<dl class="glossary">
+{% for g in glossary %}
+  <div><dt>{{ g.term }}{% if g.original %} <span class="term">{{ g.original }}</span>{% endif %}</dt><dd>{{ g.definition }}</dd></div>
+{% endfor %}
+</dl>
+{% endif %}
+</main>
+</div>
+
+{% if has_audio %}
+<div class="player" id="player">
+  <span class="now" id="now-playing"></span>
+  <audio id="audio" controls preload="metadata" src="audio.m4a"></audio>
+</div>
+{% endif %}
+
+<dialog class="zoom-dialog" id="zoom-dialog" aria-label="{{ ui.zoom }}">
+  <img id="zoom-img" alt="">
+  <p>{{ ui.close_hint }}</p>
+</dialog>
+
+<script>
+(function(){
+  var dialog=document.getElementById('zoom-dialog'), zoomImg=document.getElementById('zoom-img');
+  document.querySelectorAll('figure.slide .zoom').forEach(function(button){
+    button.addEventListener('click',function(){
+      var img=button.querySelector('img'); zoomImg.src=img.src; zoomImg.alt=img.alt;
+      if(dialog.showModal) dialog.showModal();
+    });
+  });
+  dialog.addEventListener('click',function(){ dialog.close(); });
+
+  var printBtn=document.getElementById('print-btn');
+  if(printBtn) printBtn.addEventListener('click',function(){ window.print(); });
+
+  var audio=document.getElementById('audio');
+  function noAudio(){
+    document.body.classList.add('no-audio');
+    var player=document.getElementById('player'); if(player) player.hidden=true;
+  }
+  if(!audio){ noAudio(); }
+  else {
+    audio.addEventListener('error',noAudio);
+    document.querySelectorAll('.ts').forEach(function(button){
+      button.addEventListener('click',function(){
+        if(document.body.classList.contains('no-audio')) return;
+        audio.currentTime=parseFloat(button.dataset.t)||0; audio.play();
+      });
+    });
+    var sections=[].slice.call(document.querySelectorAll('section.topic[data-start]'));
+    var links={}; document.querySelectorAll('nav.toc a[data-id]').forEach(function(a){ links[a.dataset.id]=a; });
+    var current=null, nowPlaying=document.getElementById('now-playing');
+    audio.addEventListener('timeupdate',function(){
+      var t=audio.currentTime, found=null;
+      for(var i=0;i<sections.length;i++){ if(parseFloat(sections[i].dataset.start)<=t) found=sections[i]; else break; }
+      if(found===current) return;
+      if(current){ current.classList.remove('playing'); if(links[current.id]) links[current.id].classList.remove('playing'); }
+      current=found;
+      if(current){
+        current.classList.add('playing');
+        if(links[current.id]) links[current.id].classList.add('playing');
+        nowPlaying.textContent=current.querySelector('h3').textContent;
+      }
+    });
+  }
+
+  var toc=document.getElementById('toc-details'), narrow=window.matchMedia('(max-width: 960px)');
+  function fitToc(){ if(narrow.matches) toc.removeAttribute('open'); else toc.setAttribute('open',''); }
+  fitToc();
+  if(narrow.addEventListener) narrow.addEventListener('change',fitToc);
+  document.querySelectorAll('nav.toc a').forEach(function(a){
+    a.addEventListener('click',function(){ if(narrow.matches) toc.removeAttribute('open'); });
+  });
+})();
+</script>
+</body>
+</html>
